@@ -1,0 +1,216 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <limits.h>
+
+#define LINE_LEN 128
+
+int read_int(const char *prompt, long minv, long maxv, int *out) {
+    char line[LINE_LEN];
+    char *endptr;
+    long val;
+
+    while (1) {
+        if (prompt) printf("%s", prompt);
+        if (!fgets(line, sizeof(line), stdin)) return 0;
+        line[strcspn(line, "\n")] = '\0';
+
+        errno = 0;
+        val = strtol(line, &endptr, 10);
+        if (endptr == line || errno == ERANGE) continue;
+        while (*endptr == ' ' || *endptr == '\t') endptr++;
+        if (*endptr != '\0') continue;
+        if (val < minv || val > maxv) continue;
+
+        *out = (int)val;
+        return 1;
+    }
+}
+
+typedef struct Node {
+    int data;
+    struct Node *next;
+} Node;
+
+Node *head = NULL;
+int size_ll = 0;
+
+void display() {
+    if (!head) {
+        printf("\nList is empty!\n");
+        return;
+    }
+    printf("\nList elements: ");
+    Node *cur = head;
+    while (cur) {
+        printf("%d ", cur->data);
+        cur = cur->next;
+    }
+    printf("\n");
+}
+
+void insertBeginning() {
+    int value;
+    if (!read_int("Enter value to insert: ", INT_MIN, INT_MAX, &value)) return;
+    Node *node = malloc(sizeof(Node));
+    node->data = value;
+    node->next = head;
+    head = node;
+    size_ll++;
+}
+
+void insertEnd() {
+    int value;
+    if (!read_int("Enter value to insert: ", INT_MIN, INT_MAX, &value)) return;
+    Node *node = malloc(sizeof(Node));
+    node->data = value;
+    node->next = NULL;
+
+    if (!head) head = node;
+    else {
+        Node *cur = head;
+        while (cur->next) cur = cur->next;
+        cur->next = node;
+    }
+    size_ll++;
+}
+
+void insertPosition() {
+    int pos, value;
+    if (!read_int("Enter position: ", 1, size_ll + 1, &pos)) return;
+    if (!read_int("Enter value to insert: ", INT_MIN, INT_MAX, &value)) return;
+
+    if (pos == 1) {
+        insertBeginning();
+        return;
+    }
+
+    Node *node = malloc(sizeof(Node));
+    node->data = value;
+    Node *cur = head;
+
+    for (int i = 1; i < pos - 1; i++) cur = cur->next;
+
+    node->next = cur->next;
+    cur->next = node;
+    size_ll++;
+}
+
+void deleteBeginning() {
+    if (!head) {
+        printf("\nList is empty!\n");
+        return;
+    }
+    Node *temp = head;
+    printf("Deleted %d\n", head->data);
+    head = head->next;
+    free(temp);
+    size_ll--;
+}
+
+void deleteEnd() {
+    if (!head) {
+        printf("\nList is empty!\n");
+        return;
+    }
+    if (!head->next) {
+        printf("Deleted %d\n", head->data);
+        free(head);
+        head = NULL;
+        size_ll--;
+        return;
+    }
+    Node *cur = head;
+    while (cur->next->next) cur = cur->next;
+    printf("Deleted %d\n", cur->next->data);
+    free(cur->next);
+    cur->next = NULL;
+    size_ll--;
+}
+
+void deletePosition() {
+    int pos;
+    if (!read_int("Enter position: ", 1, size_ll, &pos)) return;
+
+    if (pos == 1) {
+        deleteBeginning();
+        return;
+    }
+
+    Node *cur = head;
+    for (int i = 1; i < pos - 1; i++) cur = cur->next;
+
+    Node *temp = cur->next;
+    printf("Deleted %d\n", temp->data);
+    cur->next = temp->next;
+    free(temp);
+    size_ll--;
+}
+
+void free_list() {
+    Node *cur = head;
+    while (cur) {
+        Node *tmp = cur;
+        cur = cur->next;
+        free(tmp);
+    }
+    head = NULL;
+    size_ll = 0;
+}
+
+int main() {
+    int choice, initial;
+
+    printf("\n===== LINKED LIST SIMULATION =====\n");
+
+    if (!read_int("Enter initial number of elements (0–1000): ", 0, 1000, &initial)) initial = 0;
+
+    for (int i = 0; i < initial; i++) {
+        int val;
+        char p[50];
+        snprintf(p, sizeof(p), "Enter element %d: ", i + 1);
+        read_int(p, INT_MIN, INT_MAX, &val);
+
+        Node *node = malloc(sizeof(Node));
+        node->data = val;
+        node->next = NULL;
+
+        if (!head) head = node;
+        else {
+            Node *cur = head;
+            while (cur->next) cur = cur->next;
+            cur->next = node;
+        }
+        size_ll++;
+    }
+
+    while (1) {
+        printf("\n--------------------------------\n");
+        printf("Current size: %d\n", size_ll);
+        printf("1. Display\n");
+        printf("2. Insert Beginning\n");
+        printf("3. Insert End\n");
+        printf("4. Insert Position\n");
+        printf("5. Delete Beginning\n");
+        printf("6. Delete End\n");
+        printf("7. Delete Position\n");
+        printf("8. Exit\n");
+        printf("--------------------------------\n");
+
+        if (!read_int("Enter your choice: ", 1, 8, &choice)) continue;
+
+        switch (choice) {
+            case 1: display(); break;
+            case 2: insertBeginning(); break;
+            case 3: insertEnd(); break;
+            case 4: insertPosition(); break;
+            case 5: deleteBeginning(); break;
+            case 6: deleteEnd(); break;
+            case 7: deletePosition(); break;
+            case 8: free_list(); return 0;
+        }
+    }
+
+    return 0;
+}
